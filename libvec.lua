@@ -21,6 +21,13 @@ local _vector = {
 			self.z * m
 		)
 	end,
+	mulVectors = function(self, o)
+		return vector.new(
+			self.x*o.x,
+			self.y*o.y,
+			self.z*o.z
+		)
+	end,
 	dot = function( self, o )
 		return self.x*o.x + self.y*o.y + self.z*o.z
 	end,
@@ -45,8 +52,14 @@ local _vector = {
 			math.floor( (self.z + (nTolerance * 0.5)) / nTolerance ) * nTolerance
 		)
 	end,
+	equals = function (self, o)
+		return not(o == nil) and self.x == o.x and self.y == o.y and self.z == o.z
+	end,
 	tostring = function( self )
 		return self.x..","..self.y..","..self.z
+	end,
+	className = function( self)
+		return "Vector"
 	end,
 }
 
@@ -67,6 +80,10 @@ function vector.new( x, y, z )
 	}
 	setmetatable( v, vmetatable )
 	return v
+end
+
+function vector.isVector(o)
+	return o ~= nil and o.className ~= nil and o:className() == _vector.className()
 end
 
 return vector

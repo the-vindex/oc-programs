@@ -1,4 +1,6 @@
-if pcall('require("robot")') then
+--detect whether we are in MC
+local res, robot = pcall(function() return require("robot") end)
+if type(robot) == 'table' then
 	ingame = true
 else
 	ingame = false
@@ -12,10 +14,25 @@ if ingame then
 	counter = 100
 else
 	package.path="./?/init.lua;" .. package.path
+	package.path="./testlibs/?.lua;" .. package.path
 	ass = require("luassert")
 end
 
-vec = require("libvec")
+local vec = require("libvec")
+local FieldInfo = require("FieldInfo")
+local enums = require("OcEnums")
+local axis = enums.axis
+
+
+function printTable(t)
+	for k,v in pairs(t) do
+		print(k)
+	end
+end
+
+function printObject(object)
+	print(ser.serialize(object,true))
+end
 
 local robotInfo = {
 	x = 'unknown',
@@ -24,48 +41,6 @@ local robotInfo = {
 	facing = 'unknown'
 }
 
-local axis = {
-	zNorthSouth = "zNorthSouth",
-	xEastWest = "xEastWest",
-	yUpDown = "yUpDown"
-}
-
--- class FieldInfo
-FieldInfo = {}
-function FieldInfo:new(o)
-	o = o or {}
-	setmetatable(o, self)
-	self.__index = self
-	return o
-end
-
-function FieldInfo:newFromParams(startCoord, endCoord)
-	local fieldInfo = self:new()
-	fieldInfo.startCoord = startCoord
-	fieldInfo.endCoord = endCoord
-	
-	local fieldMoveVector = subtractVectors(fieldInfo.endCoord, fieldInfo.startCoord)
-	
-	fieldInfo.fieldMoveVector = fieldMoveVector
-
-	local axisInfo = {}
-	--select primary movement direction - in this direction we move forward, into other direction we just turn
-	if (math.abs(fieldMoveVector.x)>=math.abs(fieldMoveVector.z)) then
-		axisInfo.primaryAxis = axis.xEastWest
-		axisInfo.secondaryAxis = axis.zNorthSouth
-	else
-		axisInfo.primaryAxis = axis.zNorthSouth
-		axisInfo.secondaryAxis = axis.xEastWest
-	end
-
-	fieldInfo.axisInfo = axisInfo
-	
-	return fieldInfo
-end
-
-function printObject(object)
-	print(ser.serialize(object,true))
-end
 
 function nav()
 	return component.navigation
@@ -87,39 +62,18 @@ function loadField()
 	end
 	
 	--normalize waypoints coordinates towards map
-	local myCoord = tripleToVector({myX,myY,myZ})
-	local startCoord = sumVectors(myCoord,tripleToVector(fieldStart))
-	local endCoord = sumVectors(myCoord,tripleToVector(fieldEnd))
+	local myCoord = vec.new(myX,myY,myZ)
+	local startCoord = myCoord + tripleToVector(fieldStart)
+	local endCoord = myCoord + tripleToVector(fieldEnd)
 	printObject(startCoord)
 	printObject(endCoord)
 
 	return FieldInfo:newFromParams(startCoord, endCoord)
 end
 
-function createVector(x,y,z)
-	return {x = x, y = y, z = z}
-end
-
-function sumVectors(v1, v2)
---print(ser.serialize(v1))
---print(ser.serialize(v2))
-	return createVector(v1['x'] + v2['x'], v1['y'] + v2['y'], v1['z'] + v2['z'])
-end
-
-function multiplyVectors(v1, v2)
-	return createVector(v1['x'] * v2['x'], v1['y'] * v2['y'], v1['z'] * v2['z'])
-end
-
-function subtractVectors(v1, v2)
---print(ser.serialize(v1))
---print(ser.serialize(v2))
-	return createVector(v1['x'] - v2['x'], v1['y'] - v2['y'], v1['z'] - v2['z'])
-end
-
-
 function tripleToVector(triple)
 	--print(ser.serialize(triple))
-	return createVector(triple[1], triple[2], triple[3])
+	return vec.new(triple[1], triple[2], triple[3])
 end
 
 function findWaypointByName(t, name)
@@ -134,11 +88,51 @@ function filterTable_first(t,filter)
 	end
 end
 
+function planMoves(field)
+	local primaryAxis = field.axisInfo.primaryAxis
+	local secondaryAxis = field.axisInfo.secondaryAxis
+	
+	local coordinateDeltas = {}
+	coordinateDeltas[1] = field.fieldMoveVector:mulVectors(primaryAxis.coordinateFilter)
+	coordinateDeltas[2] = field.fieldMoveVector:mulVectors(secondaryAxis.coordinateFilter):normalize()
+	coordinateDeltas[3] = coordinateDeltas[1]:mul(-1)
+	coordinateDeltas[4] = coordinateDeltas[2]
+	
+	for i=#coordinateDeltas,1,-1 do
+		if coordinateDeltas[i]:length() == 0 then
+			table.remove(coordinateDeltas,i)
+		end
+	end
+	
+	local i = 1
+	local limit = #coordinateDeltas
+	local currentCoord = field.startCoord
+	local finalCoord = field.endCoord
+	local moves = {}
+	local count = 0
+	
+	
+	while count<100 and not(currentCoord:equals(finalCoord)) do
+		local nextCoord = currentCoord:add(coordinateDeltas[i])
+		
+		table.insert(moves, {currentCoord, nextCoord})
+		currentCoord = nextCoord
+		
+		i = i + 1
+		if (i > limit) then
+			i = 1
+		end
+		count = count + 1
+	end
+	
+	return moves
+end
+
 
 --- automatic self-test
 function t()
 	v = function(x,y,z)
-		return createVector(x,y,z)
+		return vec.new(x,y,z)
 	end
 	
 	--FieldInfo tests"
@@ -150,8 +144,38 @@ function t()
 		ass.message("vector").same(e,f.fieldMoveVector)
 		ass.message("axis primary").same(axis.zNorthSouth, f.axisInfo.primaryAxis)
 		ass.message("axis secondary").same(axis.xEastWest, f.axisInfo.secondaryAxis)
+		ass.message("shouldn't crash").Not.has.errors(function () tostring(f) end)
 	
+	-- test our additions to vectors
+	ass.message("equals works").True(v(1,2,3):equals(v(1,2,3)))
+	ass.message("not-equals works").False(v(1,2,3):equals(v(1,2,4)))
 	
+	local moves1 = planMoves(FieldInfo:newFromParams(v(0,0,0),v(5,0,0)))
+	ass.message("moves by X axis only").same({v(0,0,0),v(5,0,0)}, moves1[1])
+	
+	local moves2 = planMoves(FieldInfo:newFromParams(v(0,0,0),v(5,0,2)))
+	ass.message("moves by X and Z - length").same(5, #moves2)
+	ass.message("moves by X and Z - 1").same({v(0,0,0),v(5,0,0)}, moves2[1])
+	ass.message("moves by X and Z - 2").same({v(5,0,0),v(5,0,1)}, moves2[2])
+	ass.message("moves by X and Z - 3").same({v(5,0,1),v(0,0,1)}, moves2[3])
+	ass.message("moves by X and Z - 4").same({v(0,0,1),v(0,0,2)}, moves2[4])
+	ass.message("moves by X and Z - 4").same({v(0,0,2),v(5,0,2)}, moves2[5])
+	
+	local ShapeInfo = require ("ShapeInfo")
+	ShapeInfo.unitTest()
+	
+	local CoordTracker = require("CoordTracker")
+	CoordTracker.unitTest()
+	
+	local Pathfinder = require("Pathfinder")
+	Pathfinder.unitTests()
+	
+	local RobotDriver = require("RobotDriver")
+	RobotDriver.unitTest_automove()
+	RobotDriver.unitTest_autobuild()
+	
+	local robot = require("robotEmu")
+	robot.testAll()
 end
 
 --size
