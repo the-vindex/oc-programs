@@ -176,7 +176,7 @@ function RobotDriver:_doWithItem(item, funcToDo, doNotFail)
    self:_chooseSlotByItem(item)
 
    if not funcToDo() and doNotFail ~= true then
-      error("Operation with "..item.name.." failed")
+      error("Operation with "..item.name.." failed, coord = " .. self.coordTracker.coords:tostring())
    end
 end
 
@@ -369,7 +369,7 @@ function RobotDriver:autoBuild(shapeInfo, coordTracker)
 	local d = vector.new(0,1,0)
 
 	for y = maxY, minY, -1 do
-		local path = Pathfinder.calculatePath(coordTracker, shapeInfo, z)
+		local path = Pathfinder.calculatePath(coordTracker, shapeInfo, y)
 		
 		if #path > 0 then
 			self:moveTo(path[1]-d)
@@ -594,10 +594,10 @@ function RobotDriver.unitTest_autobuild()
 		fb:autoBuild(request, currentCoordFb)
 		robot.world:printShape()
 
-		ass.same(robot.world:get(-3,0,3), "A")
-		ass.same(robot.world:get(0,0,1), "A")
-		ass.same(robot.world:get(-2,2,0), "A")
+		ass.same(robot.world:get(-3,3,0), "A")
 		ass.same(robot.world:get(0,1,0), "A")
+		ass.same(robot.world:get(-2,0,2), "A")
+		ass.same(robot.world:get(0,0,1), "A")
 	end
 
 	local functionNameArray = {}

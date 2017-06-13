@@ -161,21 +161,23 @@ function t()
 	ass.message("moves by X and Z - 4").same({v(0,0,1),v(0,0,2)}, moves2[4])
 	ass.message("moves by X and Z - 4").same({v(0,0,2),v(5,0,2)}, moves2[5])
 	
-	local ShapeInfo = require ("ShapeInfo")
-	ShapeInfo.unitTest()
+--	local ShapeInfo = require ("ShapeInfo")
+--	ShapeInfo.unitTest()
 	
-	local CoordTracker = require("CoordTracker")
-	CoordTracker.unitTest()
+--	local CoordTracker = require("CoordTracker")
+--	CoordTracker.unitTest()
 	
-	local Pathfinder = require("Pathfinder")
-	Pathfinder.unitTests()
+--	local Pathfinder = require("Pathfinder")
+--	Pathfinder.unitTests()
 	
+--  local robot = require("robotEmu")
+--	robot.testAll()
+  
 	local RobotDriver = require("RobotDriver")
-	RobotDriver.unitTest_automove()
+--	RobotDriver.unitTest_automove()
 	RobotDriver.unitTest_autobuild()
 	
-	local robot = require("robotEmu")
-	robot.testAll()
+
 end
 
 --size
