@@ -8,8 +8,8 @@ ShapeInfo = {}
 --- Create a new ShapeInfo
 -- @function [parent=#ShapeInfo] new
 -- @return ShapeInfo
-function ShapeInfo:new()
-   local o = {}
+function ShapeInfo:new(o)
+   o = o or {}
    setmetatable(o, self)
    self.__index = self
 
@@ -105,7 +105,7 @@ function ShapeInfo:printShape()
 			for x = minV.x, maxV.x do
 				local value = self:get(x, y, z)
 				if value ~= nil then
-					line = line..value
+					line = line..tostring(value)
 				else
 					line = line.." "
 				end

@@ -21,7 +21,7 @@ function Pathfinder.calculatePath(coord, shape, y)
 	--expects vectors
 	local function addUniquePoint(array, newValue)
 		for _, value in ipairs(array) do
-			if vectorEquals(value, newValue) then
+			if value:equals(newValue) then
 				return
 			end
 		end
@@ -104,11 +104,11 @@ function Pathfinder.calculatePath(coord, shape, y)
 		targetPoint = topCorners[calculateOpositeCornerIndex(nextPointIndex)]
 	end
 
-	while not(vectorEquals(current,targetPoint)) do
+	while not(current:equals(targetPoint)) do
 		current = current + stepInner * innerReverse
 		addUniquePoint(path,current)
 
-		if not(vectorEquals(current,targetPoint)) then
+		if not(current:equals(targetPoint)) then
 			current = current + stepOuter
 			addUniquePoint(path,current)
 		end
@@ -122,14 +122,22 @@ function Pathfinder.v(x,y,z)
    return vector.new(x,y,z)
 end
 
-function Pathfinder.unitTests()
+function Pathfinder.unitTest()
+  local origPath = package.path
+  package.path="./?/init.lua;" .. package.path
+	package.path="./testlibs/?.lua;" .. package.path
+  
 	local ass = require("luassert")
-	require("MyAsserts")
+	local testTools = require("MyAsserts")
+  
+  package.path = origPath
 	
 	local v = Pathfinder.v
 	local calculatePath = Pathfinder.calculatePath
 
-	local function testGoToCoordinate()
+  local tests = {}
+  
+	function tests.test1GoToCoordinate()
 		local c = CoordTracker:new(2,2,2, CoordTracker.DIR.Z_PLUS)
 		local s = ShapeInfo:new()
 		s:put(0,0,0,"T")
@@ -142,7 +150,7 @@ function Pathfinder.unitTests()
 		print("testGoToCoordinate ok")
 	end
 
-	local function testDoOneLine()
+	function tests.test2DoOneLine()
 		local s = ShapeInfo:new()
 		s:put(0,0,0,"T")
 		s:put(5,0,0,"T")
@@ -158,7 +166,7 @@ function Pathfinder.unitTests()
 		print("testDoOneLine ok")
 	end
 
-	local function testSmallSquare()
+	function tests.test3SmallSquare()
 		local s = ShapeInfo:new()
 		s:fillYLayer(0,1,0,1,0,"F")
 		s:printShape()
@@ -171,7 +179,7 @@ function Pathfinder.unitTests()
 		print("testSmallSquare ok")
 	end
 
-	local function testSmallRectangle()
+	function tests.test4SmallRectangle()
 		local s = ShapeInfo:new()
 		s:fillYLayer(0,5,0,1,0,"F")
 		s:printShape()
@@ -185,7 +193,7 @@ function Pathfinder.unitTests()
 	end
 
 
-	local function testRectangle()
+	function tests.test5Rectangle()
 		local s = ShapeInfo:new()
 		s:fillYLayer(0,5,0,2,0,"F")
 		s:printShape()
@@ -198,7 +206,7 @@ function Pathfinder.unitTests()
 		print("testRectangle ok")
 	end
 	
-	local function testOptimizeLineMovement()
+	function tests.test6OptimizeLineMovement()
 		local s = ShapeInfo:new()
 		s:fillYLayer(0,5,0,0,0,"F")
 		s:fillYLayer(2,3,1,1,0,"F")
@@ -213,12 +221,10 @@ function Pathfinder.unitTests()
 		print("testOptimizeLineMovement ok")
 	end
 
-	testGoToCoordinate()
-	testDoOneLine()
-	testSmallSquare()
-	testSmallRectangle()
-	testRectangle()
-	testOptimizeLineMovement()
+	testTools.TestRunner(tests,"test")
+  
 end
+
+--Pathfinder.unitTest()
 
 return Pathfinder

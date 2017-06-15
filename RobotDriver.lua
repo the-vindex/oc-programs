@@ -13,8 +13,10 @@ else
 end
 
 local sleep
+local Blocks
 if not(ingame) then
-	robot = require("robotEmu")
+	robot = require("testlibs/robotEmu")
+  Blocks = require("testlibs/Blocks")
 	sleep = function() end
 else
 	sleep = os.sleep
@@ -366,16 +368,16 @@ function RobotDriver:autoBuild(shapeInfo, coordTracker)
 	self.coordTracker = coordTracker
 	local minV,maxV = shapeInfo:getBorderCubeCoords()
 	local maxY, minY = maxV.y, minV.y
-	local d = vector.new(0,1,0)
+	local offset = vector.new(0,1,0)
 
 	for y = maxY, minY, -1 do
 		local path = Pathfinder.calculatePath(coordTracker, shapeInfo, y)
 		
 		if #path > 0 then
-			self:moveTo(path[1]-d)
+			self:moveTo(path[1]-offset)
 			self:placeAndConfigure(shapeInfo, CoordTracker.MOVE_DIR.UP)
 			for i = 2, #path do
-				self:moveTo(path[i]-d, function() 
+				self:moveTo(path[i]-offset, function() 
 					self:placeAndConfigure(shapeInfo, CoordTracker.MOVE_DIR.UP)
 				end)
 				self:_resupply()
@@ -383,6 +385,33 @@ function RobotDriver:autoBuild(shapeInfo, coordTracker)
 			end
 		end
 	end
+end
+
+function RobotDriver:autoHarvest(shapeInfo, coordTracker)
+	self.coordTracker = coordTracker
+	local minV,maxV = shapeInfo:getBorderCubeCoords()
+	local maxY, minY = maxV.y, minV.y
+  local d = vector.new(0, 1, 0)
+
+	for y = maxY, minY, -1 do
+		local path = Pathfinder.calculatePath(coordTracker, shapeInfo, y)
+		
+		if #path > 0 then
+			self:moveTo(path[1] + d)
+			self:harvestPlantDown(shapeInfo)
+			for i = 2, #path do
+				self:moveTo(path[i]  + d, function() 
+					self:harvestPlantDown(shapeInfo)
+				end)
+				self:_resupply()
+				self:_checkFuel()
+			end
+		end
+	end
+end
+
+function RobotDriver:harvestPlantDown(shapeInfo)
+  robot.useDown()
 end
 
 
@@ -432,6 +461,7 @@ end
 ------------------------- Unit tests
 function RobotDriver.unitTest_automove()
 	local ass = require("luassert")
+  local testTools = require("testlibs/MyAsserts")
 
 	local function v(x,y,z)
 		return vector.new(x,y,z)
@@ -447,7 +477,7 @@ function RobotDriver.unitTest_automove()
 		f.coordTracker = startingCoordTracker
 
 		f:moveTo(target)
-		ass.same(f.coordTracker:getCoords(), target)
+		ass.same(target, f.coordTracker:getCoords())
 	end
 
 	function RobotDriver.automoveTestMoveDown()
@@ -497,20 +527,21 @@ function RobotDriver.unitTest_automove()
 		ass.same(callbackCalledTimes, 3)
 	end
 
-	for name, func in pairs(RobotDriver) do
-		if string.starts(name, "automoveTest") then
-			print("Running "..name)
-			func()
-		end
-	end
+--	for name, func in pairs(RobotDriver) do
+--		if string.starts(name, "automoveTest") then
+--			print("Running "..name)
+--			func()
+--		end
+--	end
+  
+  testTools.TestRunner(RobotDriver, "automoveTest", function() robot.resetrobot() end)
 
 	print("unitTest_automove ok")
 end
 
 function RobotDriver.unitTest_autobuild()
 	local ass = require("luassert")
-	require("minecraftCompat")
-	require("MyAsserts")
+	local testTools = require("testlibs/MyAsserts")
 	local oldResupply = RobotDriver._resupply
 	RobotDriver._resupply = function() end
 
@@ -599,26 +630,43 @@ function RobotDriver.unitTest_autobuild()
 		ass.same(robot.world:get(-2,0,2), "A")
 		ass.same(robot.world:get(0,0,1), "A")
 	end
+  
+  function RobotDriver.autobuildTest_6harvest_singleSquare()
+		local fb, request, currentCoordFb = RobotDriver.helper_autobuildTest_setup()
+    robot.slotContents[1] = {}
 
-	local functionNameArray = {}
-	for name, func in pairs(RobotDriver) do
-		if string.starts(name, "autobuildTest_") then
-			--print("Adding "..name)
-			table.insert(functionNameArray, name)
-		end
+    local plant = Blocks.Plant:new(nil, "wheat", {"seeds"}, true, {"harvested wheat"})
+		robot.world:put(1,0,1, plant)
+    robot.world:put(1,0,2, plant)
+    robot.world:put(1,0,3, plant)
+    robot.world:put(2,0,3, plant)
+    robot.world:put(1,-1,1, "dirt")
+    
+    request:put(1,0,1, "P")
+    request:put(1,0,2, "P")
+    request:put(1,0,3, "P")
+    request:put(2,0,3, "P")
+    
+
+		fb:autoHarvest(request, currentCoordFb)
+		robot.world:printShape()
+
+    --ass.message("robot above plant").same(vector.new(1,1,1), robot.coord.coords)
+		ass.message("robot harvested expected plants").same(4, plant.rightClickCount)
 	end
-	
-	table.sort(functionNameArray)
-	
- 	for _, name in pairs(functionNameArray) do
- 		local func = RobotDriver[name]
-		print("Running "..name)
-		func()
- 	end
+
+  testTools.TestRunner(RobotDriver, "autobuildTest_", function() robot.resetrobot() end)
 
 	RobotDriver._resupply = oldResupply
 	
 	print("unitTest_autobuild ok")
 end
+
+function RobotDriver.unitTest()
+  RobotDriver.unitTest_automove()
+  RobotDriver.unitTest_autobuild()
+end
+
+RobotDriver.unitTest()
 
 return RobotDriver

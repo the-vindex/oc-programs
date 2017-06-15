@@ -22,12 +22,16 @@ function ItemStack:new(itemType, count)
    return o
 end
 
+
+
 ---
 -- @type robot
-local robot = {}
+local robot = {
+  native = {}
+}
 
-function resetrobot()
-	robot.native = {}
+function robot.resetrobot()
+--	robot.native = {}
 	
 	--- @field [parent=#robot] #table slotContents
 	robot.slotContents = {}
@@ -40,7 +44,9 @@ function resetrobot()
 	robot.activeSlot = 1
 end
 
-resetrobot()
+local resetrobot = robot.resetrobot()
+
+robot.resetrobot()
 
 
 function robot.native.craft( quantity )
@@ -235,6 +241,43 @@ function robot.native.transferTo( slot, amount )
   return true
 end
 
+function robot.native.use(side, sneaking, duration)
+  local block = robot.world:getV(robot.coord.coords+robot.coord.direction.forward)
+  return robot.native._useInner(block, side, sneaking, duration)
+end
+
+function robot.native.useDown(side, sneaking, duration)
+  local block = robot.world:getV(robot.coord.coords + CoordTracker.MOVE_DIR.DOWN.move)
+  return robot.native._useInner(block, side, sneaking, duration)
+end
+
+function robot.native.useUp(side, sneaking, duration)
+  local block = robot.world:getV(robot.coord.coords + CoordTracker.MOVE_DIR.UP.move)
+  return robot.native._useInner(block, side, sneaking, duration)
+end
+
+function robot.native._useInner(block, side, sneaking, duration)
+  local result = false
+  
+  if block ~= nil then
+    result = true
+    
+    if type(block) == "table" and block.rightClick ~= nil then
+      local rightClickResult = block:rightClick()
+      local drops = rightClickResult.drops
+      for _, drop in pairs(drops) do
+        local slot = robot.slotContents[robot.activeSlot]
+        if slot.count ~= nil and slot.count > 0 then
+          error("Simulator doesn't support merging of stacks, implementation of inventory simulation is needed")
+        end
+        robot.slotContents[robot.activeSlot] = drop
+      end
+    end
+  end
+  
+  return result
+end
+
 -- make copies
 for k,v in pairs(robot.native) do
   robot[k] = v
@@ -242,16 +285,25 @@ end
 
 -- ====================================== TESTING
 
-function robot.testAll()
+function robot.unitTest()
+  local origPath = package.path
+  package.path="./?/init.lua;" .. package.path
+	package.path="./testlibs/?.lua;" .. package.path
+  
 	require("minecraftCompat")
-	require("MyAsserts")
+	local testTools = require("MyAsserts")
 	local ass = require("luassert")
+  local Blocks = require("Blocks")
+  
+  package.path = origPath
+  
 	local function v(x,y,z)
 		return vector.new(x,y,z)
 	end
 
+  local tests = {}
 
-	function robot.helper_unitTest_move(params)
+	function tests.helper_unitTest_move(params)
 		local startingDir = params.startingDir or CoordTracker.DIR.X_PLUS
 		local obstacle = params.obstacle
 		local expectedCoord = params.expectedCoord
@@ -283,45 +335,45 @@ function robot.testAll()
 	end
 
 
-	function robot.unitTest_moveForward()
+	function tests.unitTest_moveForward()
 
-		robot.helper_unitTest_move({
+		tests.helper_unitTest_move({
 			callThis = robot.forward,
 			expectedCoord = v(1,0,0),
 			obstacle = {coord = v(1,0,0), value = "A"}
 		})
 	end
 
-	function robot.unitTest_moveBack()
+	function tests.unitTest_moveBack()
 
-		robot.helper_unitTest_move({
+		tests.helper_unitTest_move({
 			callThis = robot.back,
 			expectedCoord = v(-1,0,0),
 			obstacle = {coord = v(-1,0,0), value = "A"}
 		})
 	end
 
-	function robot.unitTest_moveUp()
+	function tests.unitTest_moveUp()
 
-		robot.helper_unitTest_move({
+		tests.helper_unitTest_move({
 			callThis = robot.up,
 			expectedCoord = v(0,1,0),
 			obstacle = {coord = v(0,1,0), value = "A"}
 		})
 	end
 
-	function robot.unitTest_moveDown()
+	function tests.unitTest_moveDown()
 
-		robot.helper_unitTest_move({
+		tests.helper_unitTest_move({
 			callThis = robot.down,
 			expectedCoord = v(0,-1,0),
 			obstacle = {coord = v(0,-1,0), value = "A"}
 		})
 	end
 
-	function robot.unitTest_turnRight()
+	function tests.unitTest_turnRight()
 
-		robot.helper_unitTest_move({
+		tests.helper_unitTest_move({
 			callThis = robot.turnRight,
 			expectedCoord = v(0,0,0),
 			testOnlyPositive = true
@@ -330,9 +382,9 @@ function robot.testAll()
 		ass.same(robot.coord:getDirection().name, CoordTracker.DIR.Z_MINUS.name)
 	end
 
-	function robot.unitTest_turnLeft()
+	function tests.unitTest_turnLeft()
 
-		robot.helper_unitTest_move({
+		tests.helper_unitTest_move({
 			callThis = robot.turnLeft,
 			expectedCoord = v(0,0,0),
 			testOnlyPositive = true
@@ -341,12 +393,12 @@ function robot.testAll()
 		ass.same(robot.coord:getDirection().name, CoordTracker.DIR.Z_PLUS.name)
 	end
 
-	function robot.helper_unitTest_place_ok(callThis, targetCoord)
+	function tests.helper_unitTest_place_ok(callThis, targetCoord)
 
 		robot.activeSlot = 1
 		robot.slotContents[1] = ItemStack:new("X", 10)
 
-		robot.helper_unitTest_move({
+		tests.helper_unitTest_move({
 			callThis = callThis,
 			expectedCoord = v(0,0,0),
 			testOnlyPositive = true
@@ -356,12 +408,12 @@ function robot.testAll()
 		ass.same(robot.slotContents[1].count, 9)
 	end
 
-	function robot.helper_unitTest_place_failsIfSlotEmpty(callThis,targetCoord)
+	function tests.helper_unitTest_place_failsIfSlotEmpty(callThis,targetCoord)
 
 		robot.activeSlot = 1
 		robot.slotContents[1] = {}
 
-		robot.helper_unitTest_move({
+		tests.helper_unitTest_move({
 			callThis = callThis,
 			expectedCoord = v(0,0,0),
 			testOnlyNegative = true
@@ -371,12 +423,12 @@ function robot.testAll()
 		ass.same(robot.slotContents[1].count, nil)
 	end
 
-	function robot.helper_unitTest_place_failsSpaceOccupied(callThis,targetCoord)
+	function tests.helper_unitTest_place_failsSpaceOccupied(callThis,targetCoord)
 
 		robot.activeSlot = 1
 		robot.slotContents[1] = ItemStack:new("X", 10)
 
-		robot.helper_unitTest_move({
+		tests.helper_unitTest_move({
 			callThis = callThis,
 			expectedCoord = v(0,0,0),
 			obstacle = {coord = targetCoord, value = "A"},
@@ -387,31 +439,59 @@ function robot.testAll()
 		ass.same(robot.slotContents[1].count, 10)
 	end
 
-	function robot.helper_unitTest_place(func,targetCoord)
-		robot.helper_unitTest_place_ok(func,targetCoord)
-		robot.helper_unitTest_place_failsIfSlotEmpty(func,targetCoord)
-		robot.helper_unitTest_place_failsSpaceOccupied(func,targetCoord)
+	function tests.helper_unitTest_place(func,targetCoord)
+		tests.helper_unitTest_place_ok(func,targetCoord)
+		tests.helper_unitTest_place_failsIfSlotEmpty(func,targetCoord)
+		tests.helper_unitTest_place_failsSpaceOccupied(func,targetCoord)
 	end
 
-	function robot.unitTest_place_forward()
-		robot.helper_unitTest_place(robot.place, v(1,0,0))
+	function tests.unitTest_place_forward()
+		tests.helper_unitTest_place(robot.place, v(1,0,0))
 	end
 
-	function robot.unitTest_place_down()
-		robot.helper_unitTest_place(robot.placeDown, v(0,-1,0))
+	function tests.unitTest_place_down()
+		tests.helper_unitTest_place(robot.placeDown, v(0,-1,0))
 	end
 
-	function robot.unitTest_place_up()
-		robot.helper_unitTest_place(robot.placeUp, v(0,1,0))
+	function tests.unitTest_place_up()
+		tests.helper_unitTest_place(robot.placeUp, v(0,1,0))
 	end
+   
+  function tests.unitTest_use()
+    robot.activeSlot = 1
+		robot.slotContents[1] = {}
+    robot.coord = CoordTracker:new(0,0,0, CoordTracker.DIR.Z_PLUS)
+  
+    function createPlant(drop)
+      return Blocks.Plant:new(nil, "wheat", {"seeds"}, true, {drop})
+    end
+    
+    function verifyResult(message, block, expectedClickCount, expectedDrop)
+      ass.message(message..": rightclicked a block").equals(expectedClickCount, block.rightClickCount)
+      ass.message(message..": harvested drop is in the slot").equals(expectedDrop, robot.slotContents[1])
+    end
+  
+    local plant1 = createPlant("front wheat")
+    robot.world:put(0,0,1, plant1)
+    local plant2 = createPlant("bottom wheat")
+    robot.world:put(0,-1,0, plant2)
+    local plant3 = createPlant("top wheat")
+    robot.world:put(0,1,0, plant3)
+    
+    robot.use(nil, false, nil)
+    verifyResult("use front", plant1, 1, "front wheat")
+    
+    robot.useDown(nil, false, nil)
+    verifyResult("use down", plant2, 1, "bottom wheat")
+    
+    robot.useUp(nil, false, nil)
+    verifyResult("use up", plant3, 1, "top wheat")
+    
+  end
 
-	for name, func in pairs(robot) do
-		if string.starts(name, "unitTest_") then
-			resetrobot()
-			print("Running "..name)
-			func()
-		end
-	end
+  testTools.TestRunner(tests,"unitTest_", resetrobot)
 end
+
+-- robot.unitTest()
 
 return robot

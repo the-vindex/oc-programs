@@ -41,9 +41,12 @@ function FieldInfo:newFromParams(startCoord, endCoord)
 	return fieldInfo
 end
 
+
 function FieldInfo:new(o)
 	o = o or {}
 	setmetatable(o, vmetatable)
+  
+  self.__index = self
 	return o
 end
 
