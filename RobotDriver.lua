@@ -403,8 +403,8 @@ function RobotDriver:autoHarvest(shapeInfo, coordTracker)
 				self:moveTo(path[i]  + d, function() 
 					self:harvestPlantDown(shapeInfo)
 				end)
-				self:_resupply()
-				self:_checkFuel()
+				--self:_resupply()
+				--self:_checkFuel()
 			end
 		end
 	end
@@ -667,6 +667,6 @@ function RobotDriver.unitTest()
   RobotDriver.unitTest_autobuild()
 end
 
-RobotDriver.unitTest()
+--RobotDriver.unitTest()
 
 return RobotDriver

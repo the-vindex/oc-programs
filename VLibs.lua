@@ -10,7 +10,7 @@ end
 
 function VLibs.printTable(t)
 	for k,v in pairs(t) do
-		print(k)
+		print(k, v)
 	end
 end
 

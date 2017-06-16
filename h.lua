@@ -7,7 +7,9 @@ else
 end
 
 if ingame then
-	os.execute("wget -f -q http://192.168.0.101:8000/oc2/libvec.lua")
+	--os.execute("wget -f -q http://192.168.0.101:8000/oc2/libvec.lua")
+  --os.execute("wget -f -q http://192.168.0.101:8000/oc2/contents")
+  --os.execute("contents")
 	robot = require("robot")
 	component = require("component")
 	ser = require("serialization")
@@ -23,7 +25,10 @@ local FieldInfo = require("FieldInfo")
 local enums = require("OcEnums")
 local VLibs = require("VLibs")
 local axis = enums.axis
-
+local ShapeInfo = require("ShapeInfo")
+local RobotDriver = require("RobotDriver")
+local CoordTracker = require("CoordTracker")
+local AutoLogger = require("AutoLogger")
 
 local robotInfo = {
 	x = 'unknown',
@@ -56,18 +61,18 @@ function loadField()
 	local myCoord = vec.new(myX,myY,myZ)
 	local startCoord = myCoord + tripleToVector(fieldStart)
 	local endCoord = myCoord + tripleToVector(fieldEnd)
-	printObject(startCoord)
-	printObject(endCoord)
+	--printObject(startCoord)
+	--printObject(endCoord)
 
 	return FieldInfo:newFromParams(startCoord, endCoord)
 end
 
-local function tripleToVector(triple)
+function tripleToVector(triple)
 	return vec.new(triple[1], triple[2], triple[3])
 end
 
-local function findWaypointByName(t, name)
-	return filterTable_first(t, function(i) return i['label'] == name end)
+function findWaypointByName(t, name)
+	return VLibs.filterTable_first(t, function(i) return i['label'] == name end)
 end
 
 
@@ -116,18 +121,23 @@ end
 
 --size
 local fieldInfo = loadField()
+local startCoord = fieldInfo.startCoord
+local endCoord = fieldInfo.endCoord
 
-local shapeInfo = ShapeInfo:new()
+local request = ShapeInfo:new()
+request:putV(startCoord, "P")
+request:putV(endCoord, "P")
 
-while counter>0 do
-	counter = counter - 1
-	robot.useDown()
-	local isMoved,failReason = robot.forward()
-	if(not(isMoved)) then
-		print('fail')
-		robot.swing()
-	end
-	os.sleep(5);
-end
+local minV, maxV = request:getBorderCubeCoords()
+request:fillYLayer(minV.x, maxV.x, minV.z, maxV.z, minV.y, "P")
+request:printShape()
 
+local driver = RobotDriver:new()
 
+local myX, myY, myZ = nav().getPosition()
+local facing = nav().getFacing()
+
+local log = AutoLogger:new()
+driver = log:wrapObject(driver)
+
+driver:autoHarvest(request, CoordTracker:new(myX, myY, myZ, CoordTracker.getDirFromSideApi(facing)))

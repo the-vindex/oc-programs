@@ -19,10 +19,10 @@ local CoordTracker = {}
 
 --- Facing direction
 -- @type DIR
-CoordTracker.DIR = {X_PLUS  = {name="x+", left="Z_PLUS", right="Z_MINUS", forward=v(1,0,0), back=v(-1,0,0)},
-					Z_MINUS = {name="y-", left="X_PLUS", right="X_MINUS" , forward=v(0,0,-1), back=v(0,0,1)},
-					X_MINUS = {name="x-", left="Z_MINUS", right="Z_PLUS", forward=v(-1,0,0), back=v(1,0,0)},
-					Z_PLUS  = {name="y+", left="X_MINUS", right="X_PLUS", forward=v(0,0,1), back=v(0,0,-1)}
+CoordTracker.DIR = {X_PLUS  = {name="x+", left="Z_PLUS", right="Z_MINUS", forward=v(1,0,0), back=v(-1,0,0), sideApiValue = 5 },
+					Z_MINUS = {name="z-", left="X_PLUS", right="X_MINUS" , forward=v(0,0,-1), back=v(0,0,1), sideApiValue = 2 },
+					X_MINUS = {name="x-", left="Z_MINUS", right="Z_PLUS", forward=v(-1,0,0), back=v(1,0,0), sideApiValue = 4 },
+					Z_PLUS  = {name="z+", left="X_MINUS", right="X_PLUS", forward=v(0,0,1), back=v(0,0,-1), sideApiValue = 3 }
 					}
 for name, value in pairs(CoordTracker.DIR) do
 	value.leftObj = CoordTracker.DIR[value.left]
@@ -33,12 +33,25 @@ end
 -- wrap = parameter for peripheral.wrap() call
 -- place = name of function for placing item in this direction
 CoordTracker.MOVE_DIR = {
-					UP = {move = v(0,1,0), wrap = "top", place = "placeUp"},
-					DOWN = {move = v(0,-1,0), wrap = "bottom", place = "placeDown"},
+					UP = {name="y+", move = v(0,1,0), wrap = "top", place = "placeUp", sideApiValue = 1},
+					DOWN = {name="y-", move = v(0,-1,0), wrap = "bottom", place = "placeDown", sideApiValue = 0},
 					FORWARD = {name="forward", move = nil, wrap="front", place = "place"}, -- for forward move is direction dependant
 					BACK = {name="back", move = nil} -- for back move is direction dependant
 					}
-					
+
+CoordTracker.DIR.Y_PLUS = CoordTracker.MOVE_DIR.UP
+CoordTracker.DIR.Y_MINUES = CoordTracker.MOVE_DIR.DOWN
+
+
+CoordTracker.SIDEAPI_TO_DIR = {}
+for _, direction in pairs(CoordTracker.DIR) do
+  CoordTracker.SIDEAPI_TO_DIR[direction.sideApiValue] = direction
+end
+
+function CoordTracker.getDirFromSideApi(side)
+  return CoordTracker.SIDEAPI_TO_DIR[side]
+end
+
 --- Constructor
 -- @function [parent=#CoordTracker] new
 -- @param #number x X
@@ -128,6 +141,10 @@ function CoordTracker.unitTest()
    ass.same(v(2,3,2),c:moveUp():getCoords())
    ass.same(v(2,2,2),c:moveDown():getCoords())
    print("CoordTracker unitTest ok")
+   
+   ass.message("SideAPI mapping").equals(CoordTracker.DIR.Z_PLUS, CoordTracker.getDirFromSideApi(3))
 end
+
+--CoordTracker.unitTest()
 
 return CoordTracker
