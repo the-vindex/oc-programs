@@ -1,6 +1,9 @@
 local serpent = require("serpent")
+local log = require("log")
 
 local AutoLogger = {}
+log.outfile = "log.txt"
+log.usecolor = false
 
 function AutoLogger:new(params)
     local o = o or {}
@@ -11,7 +14,7 @@ function AutoLogger:new(params)
     o.log = {}
     o.addLog = params.addLog or function(message) 
       table.insert(o.log, message) 
-      print(message)
+      log.trace(message)
     end
     o.before = params.before or function(functionName, allParams) 
       local message = "call to: " .. (functionName or "") .. ": " .. serpent.line(allParams, {comment=false})
@@ -25,7 +28,7 @@ function AutoLogger:wrapFunction(functionName, f)
   local before = self.before
   return function(...)
     before(functionName, {...})
-    return f(unpack({...}))
+    return f(table.unpack({...}))
   end
 end
 
@@ -127,6 +130,6 @@ function AutoLogger.unitTest()
   testTools.TestRunner(test,"test")
 end
 
-AutoLogger.unitTest()
+--AutoLogger.unitTest()
 
 return AutoLogger

@@ -38,7 +38,7 @@ local robotInfo = {
 }
 
 
-function nav()
+local function nav()
 	return component.navigation
 end
 
@@ -136,8 +136,15 @@ local driver = RobotDriver:new()
 
 local myX, myY, myZ = nav().getPosition()
 local facing = nav().getFacing()
+local currentCoord = CoordTracker:new(myX, myY, myZ, CoordTracker.getDirFromSideApi(facing))
 
-local log = AutoLogger:new()
-driver = log:wrapObject(driver)
+print(tostring(currentCoord.coords))
+print(tostring(startCoord), tostring(endCoord))
 
-driver:autoHarvest(request, CoordTracker:new(myX, myY, myZ, CoordTracker.getDirFromSideApi(facing)))
+local filelogger = require("log")
+filelogger.outfile = "log.txt"
+
+--local log = AutoLogger:new()
+--driver = log:wrapObject(driver)
+
+driver:autoHarvest(request, currentCoord)

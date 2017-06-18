@@ -391,11 +391,12 @@ function RobotDriver:autoHarvest(shapeInfo, coordTracker)
 	self.coordTracker = coordTracker
 	local minV,maxV = shapeInfo:getBorderCubeCoords()
 	local maxY, minY = maxV.y, minV.y
-  local d = vector.new(0, 1, 0)
+  local d = vector.new(0, 0, 0)
 
 	for y = maxY, minY, -1 do
 		local path = Pathfinder.calculatePath(coordTracker, shapeInfo, y)
-		
+		require("VLibs").printTable(path)
+    os.exit()
 		if #path > 0 then
 			self:moveTo(path[1] + d)
 			self:harvestPlantDown(shapeInfo)
