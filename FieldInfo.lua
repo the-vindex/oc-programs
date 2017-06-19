@@ -2,7 +2,7 @@ local vec = require("libvec")
 local enums = require("OcEnums")
 local axis = enums.axis
 
-local FieldInfo = {}
+local FieldInfo = {___unload = true}
 
 local _FieldInfo = {
 	tostring= function(self)

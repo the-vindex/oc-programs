@@ -1,4 +1,4 @@
-local vector = {}
+local vector = {___unload = true}
 local _vector = {
 	add = function( self, o )
 		return vector.new(

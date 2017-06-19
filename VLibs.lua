@@ -1,4 +1,4 @@
-local VLibs = {}
+local VLibs = {___unload = true}
 
 function VLibs.filterTable_first(t,filter)
 	for _, item in ipairs(t) do

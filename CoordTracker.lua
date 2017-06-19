@@ -15,7 +15,7 @@ end
 ---
 -- @module CoordTracker
 -- @type CoordTracker
-local CoordTracker = {}
+local CoordTracker = {___unload = true}
 
 --- Facing direction
 -- @type DIR

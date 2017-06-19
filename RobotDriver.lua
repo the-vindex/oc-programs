@@ -26,7 +26,7 @@ DOWN = "down"
 UP = "up"
 FRONT = "front"
 
-local RobotDriver = {}
+local RobotDriver = {___unload = true}
 
 function string.starts(String,Start)
    return string.sub(String,1,string.len(Start))==Start

@@ -1,7 +1,7 @@
 local serpent = require("serpent")
 local log = require("log")
 
-local AutoLogger = {}
+local AutoLogger = {___unload = true}
 log.outfile = "log.txt"
 log.usecolor = false
 

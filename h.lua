@@ -1,3 +1,12 @@
+--dofile("unload.lua")
+for moduleName, _ in pairs(package.loaded) do
+  local ok, present = pcall(function() return package.loaded[moduleName].___unload end) 
+  if ok and present then
+    package.loaded[moduleName] = nil
+  end
+end
+
+
 --detect whether we are in MC
 local res, robot = pcall(function() return require("robot") end)
 if type(robot) == 'table' then
@@ -56,11 +65,11 @@ local function loadField()
 	return FieldInfo:newFromParams(startCoord, endCoord)
 end
 
-local function tripleToVector(triple)
+function tripleToVector(triple)
 	return vec.new(triple[1], triple[2], triple[3])
 end
 
-local function findWaypointByName(t, name)
+function findWaypointByName(t, name)
 	return VLibs.filterTable_first(t, function(i) return i['label'] == name end)
 end
 

@@ -3,7 +3,7 @@ local vector = require "libvec"
 ---
 -- @module ShapeInfo
 -- @type ShapeInfo
-ShapeInfo = {}
+ShapeInfo = {___unload = true}
 
 --- Create a new ShapeInfo
 -- @function [parent=#ShapeInfo] new

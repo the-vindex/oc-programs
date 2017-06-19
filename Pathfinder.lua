@@ -2,7 +2,7 @@ local vector = require("libvec")
 local ShapeInfo = require("ShapeInfo")
 local CoordTracker = require("CoordTracker")
 
-local Pathfinder = {}
+local Pathfinder = {___unload = true}
 
 function Pathfinder.calculatePath(coord, shape, y)
 	local v = Pathfinder.v

@@ -1,6 +1,7 @@
 local vec = require("libvec")
 
 local OcEnums = {
+  ___unload = true,
 	axis = {
 		zNorthSouth = {name = "zNorthSouth", coordinateFilter = vec.new(0,0,1)},
 		xEastWest = {name = "xEastWest", coordinateFilter = vec.new(1,0,0)},
