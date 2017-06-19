@@ -1,4 +1,0 @@
-[TRACE 06/18/17 22:11:20] E:\Games\oc-programs\oc2\AutoLogger.lua:17: call to: fn: {1, 2}
-[TRACE 06/18/17 22:11:20] E:\Games\oc-programs\oc2\AutoLogger.lua:17: call to: fn1: {5}
-[TRACE 06/18/17 22:11:20] E:\Games\oc-programs\oc2\AutoLogger.lua:17: call to: fn2: {{}, 8}
-[TRACE 06/18/17 22:11:20] E:\Games\oc-programs\oc2\AutoLogger.lua:17: call to: fn: {{}, 5}
