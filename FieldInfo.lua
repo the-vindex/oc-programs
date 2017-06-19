@@ -50,4 +50,24 @@ function FieldInfo:new(o)
 	return o
 end
 
+function FieldInfo.unitTest()
+  local function v(x,y,z) return vec.new(x,y,z) end
+  
+  local ass = require("luassert")
+  	--FieldInfo tests"
+  local s = v(0,0,0)
+  local e = v(2,0,5)
+  local f = FieldInfo:newFromParams(s, e)
+  ass.message("start coord").same(v(0,0,0), f.startCoord)
+  ass.message("start end").same(v(2,0,5), f.endCoord)
+  ass.message("vector").same(e,f.fieldMoveVector)
+  ass.message("axis primary").same(axis.zNorthSouth, f.axisInfo.primaryAxis)
+  ass.message("axis secondary").same(axis.xEastWest, f.axisInfo.secondaryAxis)
+  ass.message("shouldn't crash").Not.has.errors(function () tostring(f) end)
+
+  print("FieldInfo unit tests ok")
+end
+
+--FieldInfo.unitTest()
+
 return FieldInfo

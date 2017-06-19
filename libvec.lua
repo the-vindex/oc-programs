@@ -86,4 +86,16 @@ function vector.isVector(o)
 	return o ~= nil and o.className ~= nil and o:className() == _vector.className()
 end
 
+function vector.unitTest()
+  local ass = require("luassert")
+  local function v(x,y,z) return vector.new(x,y,z) end
+  
+  	-- test our additions to vectors
+	ass.message("equals works").True(v(1,2,3):equals(v(1,2,3)))
+	ass.message("not-equals works").False(v(1,2,3):equals(v(1,2,4)))
+  print("libvec unit tests ok")
+end
+
+--vector.unitTest()
+
 return vector
