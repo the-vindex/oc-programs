@@ -19,10 +19,10 @@ local CoordTracker = {___unload = true}
 
 --- Facing direction
 -- @type DIR
-CoordTracker.DIR = {X_PLUS  = {name="x+", left="Z_PLUS", right="Z_MINUS", forward=v(1,0,0), back=v(-1,0,0), sideApiValue = 5 },
-					Z_MINUS = {name="z-", left="X_PLUS", right="X_MINUS" , forward=v(0,0,-1), back=v(0,0,1), sideApiValue = 2 },
-					X_MINUS = {name="x-", left="Z_MINUS", right="Z_PLUS", forward=v(-1,0,0), back=v(1,0,0), sideApiValue = 4 },
-					Z_PLUS  = {name="z+", left="X_MINUS", right="X_PLUS", forward=v(0,0,1), back=v(0,0,-1), sideApiValue = 3 }
+CoordTracker.DIR = {X_PLUS  = {name="x+", left="Z_MINUS", right="Z_PLUS", forward=v(1,0,0), back=v(-1,0,0), sideApiValue = 5 },
+					Z_PLUS  = {name="z+", left="X_PLUS", right="X_MINUS", forward=v(0,0,1), back=v(0,0,-1), sideApiValue = 3 },
+          X_MINUS = {name="x-", left="Z_PLUS", right="Z_MINUS", forward=v(-1,0,0), back=v(1,0,0), sideApiValue = 4 },
+					Z_MINUS = {name="z-", left="X_MINUS", right="X_PLUS" , forward=v(0,0,-1), back=v(0,0,1), sideApiValue = 2 }
 					}
 for name, value in pairs(CoordTracker.DIR) do
 	value.leftObj = CoordTracker.DIR[value.left]

@@ -102,6 +102,7 @@ local myX, myY, myZ = nav().getPosition()
 local facing = nav().getFacing()
 local currentCoord = CoordTracker:new(myX, myY, myZ, CoordTracker.getDirFromSideApi(facing))
 
+
 print(tostring(currentCoord.coords))
 print(tostring(startCoord), tostring(endCoord))
 

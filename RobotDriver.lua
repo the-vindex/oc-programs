@@ -396,11 +396,12 @@ function RobotDriver:autoHarvest(shapeInfo, coordTracker)
 	for y = maxY, minY, -1 do
 		local path = Pathfinder.calculatePath(coordTracker, shapeInfo, y)
 		require("VLibs").printTable(path)
-    os.exit()
+
 		if #path > 0 then
 			self:moveTo(path[1] + d)
 			self:harvestPlantDown(shapeInfo)
 			for i = 2, #path do
+        print(tostring(vector.new(require("component").navigation.getPosition())))
 				self:moveTo(path[i]  + d, function() 
 					self:harvestPlantDown(shapeInfo)
 				end)
