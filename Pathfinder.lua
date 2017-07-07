@@ -5,117 +5,118 @@ local CoordTracker = require("CoordTracker")
 local Pathfinder = {___unload = true}
 
 function Pathfinder.calculatePath(coord, shape, y)
-	local v = Pathfinder.v
-	local minV, maxV = shape:getBorderCubeCoords(y)
-	
-	-- 
-	if minV == nil then
-		return {}, "Layer is empty"
-	end
-	
-	local path = {}
-	function addPath(point)
-		table.insert(path,point)
-	end
+  local v = Pathfinder.v
+  local minV, maxV = shape:getBorderCubeCoords(y)
 
-	--expects vectors
-	local function addUniquePoint(array, newValue)
-		for _, value in ipairs(array) do
-			if value:equals(newValue) then
-				return
-			end
-		end
-		table.insert(array,newValue)
-	end
+  -- 
+  if minV == nil then
+    return {}, "Layer is empty"
+  end
 
-	local function findClosestPoint(myPoint, pointArray)
-		local minIndex, minDist = nil, 10000000
+  local path = {}
+  function addPath(point)
+    table.insert(path, point)
+  end
 
-		for i, point in ipairs(pointArray) do
-			if (point ~= nil ) then
-				local currentDist = (myPoint - point):length()
-				if  currentDist < minDist then
-					minIndex, minDist = i, currentDist
-				end
-			end
-		end
-		return minIndex, pointArray[minIndex]
-	end
+  --expects vectors
+  local function addUniquePoint(array, newValue)
+    for _, value in ipairs(array) do
+      if value:equals(newValue) then
+        return
+      end
+    end
+    table.insert(array, newValue)
+  end
 
-	function math.sign(value)
-		if value == 0 then
-			return 0
-		else
-			return value/math.abs(value)
-		end
-	end
+  local function findClosestPoint(myPoint, pointArray)
+    local minIndex, minDist = nil, 10000000
 
-	local function arrayContainsVector(array, vect)
-		for _, value in ipairs(array) do
-			if vectorEquals(vect,value) then
-				return true
-			end
-		end
-		return false
-	end
-	--v(maxV.x,minV.y,maxV.z), v(maxV.y,minV.x,maxV.z), v(minV.x,minV.y,maxV.z)
+    for i, point in ipairs(pointArray) do
+      if (point ~= nil) then
+        local currentDist = (myPoint - point):length()
+        if currentDist < minDist then
+          minIndex, minDist = i, currentDist
+        end
+      end
+    end
+    return minIndex, pointArray[minIndex]
+  end
 
-	local function calculateOpositeCornerIndex(index)
-		return ((index - 1 + 2) % 4) + 1 -- its modulo 4, but we start at 1... so it's more complex
-	end
+  function math.sign(value)
+    if value == 0 then
+      return 0
+    else
+      return value / math.abs(value)
+    end
+  end
 
-	local topCorners = {}
+  local function arrayContainsVector(array, vect)
+    for _, value in ipairs(array) do
+      if vectorEquals(vect, value) then
+        return true
+      end
+    end
+    return false
+  end
 
-	--  2FFFF3
-	--  FFFFFF
-	--  FFFFFF
-	--  1FFFF4
-	topCorners[1]=v(minV.x,maxV.y,minV.z)
-	topCorners[2]=v(minV.x,maxV.y,maxV.z)
-	topCorners[3]=v(maxV.x,maxV.y,maxV.z)
-	topCorners[4]=v(maxV.x,maxV.y,minV.z)
+  --v(maxV.x,minV.y,maxV.z), v(maxV.y,minV.x,maxV.z), v(minV.x,minV.y,maxV.z)
 
-	local rangeX = math.abs(maxV.x - minV.x)
-	local rangeZ = math.abs(maxV.z - minV.z)
+  local function calculateOpositeCornerIndex(index)
+    return ((index - 1 + 2) % 4) + 1 -- its modulo 4, but we start at 1... so it's more complex
+  end
 
-	local startingPointIndex, startingPoint = findClosestPoint(coord:getCoords(), topCorners)
-	addPath(startingPoint)
+  local topCorners = {}
 
-	local targetPointIndex = calculateOpositeCornerIndex(startingPointIndex)
-	local targetPoint = topCorners[targetPointIndex]
-	local direction = targetPoint - startingPoint
-	local stepX = v(1,0,0) * math.sign(direction.x)
-	local stepZ = v(0,0,1) * math.sign(direction.z)
+  --  2FFFF3
+  --  FFFFFF
+  --  FFFFFF
+  --  1FFFF4
+  topCorners[1] = v(minV.x, maxV.y, minV.z)
+  topCorners[2] = v(minV.x, maxV.y, maxV.z)
+  topCorners[3] = v(maxV.x, maxV.y, maxV.z)
+  topCorners[4] = v(maxV.x, maxV.y, minV.z)
 
-	local stepOuter, stepInner, rangeOuter
+  local rangeX = math.abs(maxV.x - minV.x)
+  local rangeZ = math.abs(maxV.z - minV.z)
 
-	if rangeX>rangeZ then
-		stepOuter, stepInner, rangeOuter = stepZ, stepX * rangeX, rangeZ
-	else
-		stepOuter, stepInner, rangeOuter = stepX, stepZ * rangeZ, rangeX
-	end
+  local startingPointIndex, startingPoint = findClosestPoint(coord:getCoords(), topCorners)
+  addPath(startingPoint)
 
-	local current = startingPoint
+  local targetPointIndex = calculateOpositeCornerIndex(startingPointIndex)
+  local targetPoint = topCorners[targetPointIndex]
+  local direction = targetPoint - startingPoint
+  local stepX = v(1, 0, 0) * math.sign(direction.x)
+  local stepZ = v(0, 0, 1) * math.sign(direction.z)
 
-	local innerReverse = 1
+  local stepOuter, stepInner, rangeOuter
 
-	if (rangeOuter % 2 == 1) then
-		local nextPointIndex, _ = findClosestPoint(current + stepInner * innerReverse, topCorners)
-		targetPoint = topCorners[calculateOpositeCornerIndex(nextPointIndex)]
-	end
+  if rangeX > rangeZ then
+    stepOuter, stepInner, rangeOuter = stepZ, stepX * rangeX, rangeZ
+  else
+    stepOuter, stepInner, rangeOuter = stepX, stepZ * rangeZ, rangeX
+  end
 
-	while not(current:equals(targetPoint)) do
-		current = current + stepInner * innerReverse
-		addUniquePoint(path,current)
+  local current = startingPoint
 
-		if not(current:equals(targetPoint)) then
-			current = current + stepOuter
-			addUniquePoint(path,current)
-		end
-		innerReverse = innerReverse * -1
-	end
+  local innerReverse = 1
 
-	return path
+  if (rangeOuter % 2 == 1) then
+    local nextPointIndex, _ = findClosestPoint(current + stepInner * innerReverse, topCorners)
+    targetPoint = topCorners[calculateOpositeCornerIndex(nextPointIndex)]
+  end
+
+  while not (current:equals(targetPoint)) do
+    current = current + stepInner * innerReverse
+    addUniquePoint(path, current)
+
+    if not (current:equals(targetPoint)) then
+      current = current + stepOuter
+      addUniquePoint(path, current)
+    end
+    innerReverse = innerReverse * -1
+  end
+
+  return path
 end
 
 function Pathfinder.v(x,y,z)
@@ -124,107 +125,107 @@ end
 
 function Pathfinder.unitTest()
   local origPath = package.path
-  package.path="./?/init.lua;" .. package.path
-	package.path="./testlibs/?.lua;" .. package.path
-  
-	local ass = require("luassert")
-	local testTools = require("MyAsserts")
+  package.path = "./?/init.lua;" .. package.path
+  package.path = "./testlibs/?.lua;" .. package.path
+
+  local ass = require("luassert")
+  local testTools = require("MyAsserts")
   
   package.path = origPath
-	
-	local v = Pathfinder.v
-	local calculatePath = Pathfinder.calculatePath
+
+  local v = Pathfinder.v
+  local calculatePath = Pathfinder.calculatePath
 
   local tests = {}
-  
-	function tests.test1GoToCoordinate()
-		local c = CoordTracker:new(2,2,2, CoordTracker.DIR.Z_PLUS)
-		local s = ShapeInfo:new()
-		s:put(0,0,0,"T")
 
-		local path = calculatePath(c, s, 0)
+  function tests.test1GoToCoordinate()
+    local c = CoordTracker:new(2, 2, 2, CoordTracker.DIR.Z_PLUS)
+    local s = ShapeInfo:new()
+    s:put(0, 0, 0, "T")
 
-		local expected = {v(0,0,0)}
+    local path = calculatePath(c, s, 0)
 
-		ass.same(path, expected)
-		print("testGoToCoordinate ok")
-	end
+    local expected = { v(0, 0, 0) }
 
-	function tests.test2DoOneLine()
-		local s = ShapeInfo:new()
-		s:put(0,0,0,"T")
-		s:put(5,0,0,"T")
+    ass.same(path, expected)
+    print("testGoToCoordinate ok")
+  end
 
-		local path = calculatePath(CoordTracker:new(2,2,2, CoordTracker.DIR.Z_PLUS), s, 0)
-		local expected = {v(0,0,0), v(5,0,0)}
-		ass.same(path, expected)
+  function tests.test2DoOneLine()
+    local s = ShapeInfo:new()
+    s:put(0, 0, 0, "T")
+    s:put(5, 0, 0, "T")
 
-		local path = calculatePath(CoordTracker:new(4,4,2, CoordTracker.DIR.Z_PLUS), s, 0)
-		local expected = {v(5,0,0),v(0,0,0)}
-		ass.same(path, expected)
-		
-		print("testDoOneLine ok")
-	end
+    local path = calculatePath(CoordTracker:new(2, 2, 2, CoordTracker.DIR.Z_PLUS), s, 0)
+    local expected = { v(0, 0, 0), v(5, 0, 0) }
+    ass.same(path, expected)
 
-	function tests.test3SmallSquare()
-		local s = ShapeInfo:new()
-		s:fillYLayer(0,1,0,1,0,"F")
-		s:printShape()
+    local path = calculatePath(CoordTracker:new(4, 4, 2, CoordTracker.DIR.Z_PLUS), s, 0)
+    local expected = { v(5, 0, 0), v(0, 0, 0) }
+    ass.same(path, expected)
 
-		-- if no direction is better, we prefer to move along Y axis
-		local path = calculatePath(CoordTracker:new(-1,-1,0, CoordTracker.DIR.Z_PLUS), s, 0)
-		local expected = {v(0,0,0), v(0,0,1), v(1,0,1), v(1,0,0)}
-		ass.same(expected,path)
-		
-		print("testSmallSquare ok")
-	end
+    print("testDoOneLine ok")
+  end
 
-	function tests.test4SmallRectangle()
-		local s = ShapeInfo:new()
-		s:fillYLayer(0,5,0,1,0,"F")
-		s:printShape()
+  function tests.test3SmallSquare()
+    local s = ShapeInfo:new()
+    s:fillYLayer(0, 1, 0, 1, 0, "F")
+    s:printShape()
 
-		-- if no direction is better, we prefer to move along Y axis
-		local path = calculatePath(CoordTracker:new(-1,-1,0, CoordTracker.DIR.Z_PLUS), s, 0)
-		local expected = {v(0,0,0), v(5,0,0), v(5,0,1), v(0,0,1)}
-		ass.same(path, expected)
-		
-		print("testSmallRectangle ok")
-	end
+    -- if no direction is better, we prefer to move along Y axis
+    local path = calculatePath(CoordTracker:new(-1, -1, 0, CoordTracker.DIR.Z_PLUS), s, 0)
+    local expected = { v(0, 0, 0), v(0, 0, 1), v(1, 0, 1), v(1, 0, 0) }
+    ass.same(expected, path)
+
+    print("testSmallSquare ok")
+  end
+
+  function tests.test4SmallRectangle()
+    local s = ShapeInfo:new()
+    s:fillYLayer(0, 5, 0, 1, 0, "F")
+    s:printShape()
+
+    -- if no direction is better, we prefer to move along Y axis
+    local path = calculatePath(CoordTracker:new(-1, -1, 0, CoordTracker.DIR.Z_PLUS), s, 0)
+    local expected = { v(0, 0, 0), v(5, 0, 0), v(5, 0, 1), v(0, 0, 1) }
+    ass.same(path, expected)
+
+    print("testSmallRectangle ok")
+  end
 
 
-	function tests.test5Rectangle()
-		local s = ShapeInfo:new()
-		s:fillYLayer(0,5,0,2,0,"F")
-		s:printShape()
+  function tests.test5Rectangle()
+    local s = ShapeInfo:new()
+    s:fillYLayer(0, 5, 0, 2, 0, "F")
+    s:printShape()
 
-		-- if no direction is better, we prefer to move along Y axis
-		local path = calculatePath(CoordTracker:new(-1,-1,0, CoordTracker.DIR.Z_PLUS), s, 0)
-		local expected = {v(0,0,0), v(5,0,0), v(5,0,1), v(0,0,1), v(0,0,2), v(5,0,2)}
-		ass.same(path, expected)
-		
-		print("testRectangle ok")
-	end
-	
-	function tests.test6OptimizeLineMovement()
-		local s = ShapeInfo:new()
-		s:fillYLayer(0,5,0,0,0,"F")
-		s:fillYLayer(2,3,1,1,0,"F")
-		s:fillYLayer(0,5,2,2,0,"F")
-		s:printShape()
+    -- if no direction is better, we prefer to move along Y axis
+    local path = calculatePath(CoordTracker:new(-1, -1, 0, CoordTracker.DIR.Z_PLUS), s, 0)
+    local expected = { v(0, 0, 0), v(5, 0, 0), v(5, 0, 1), v(0, 0, 1), v(0, 0, 2), v(5, 0, 2) }
+    ass.same(path, expected)
 
-		-- if no direction is better, we prefer to move along Y axis
-		local path = calculatePath(CoordTracker:new(-1,-1,0, CoordTracker.DIR.Z_PLUS), s, 0)
-		local expected = {v(0,0,0), v(5,0,0), v(5,0,1), v(0,0,1), v(0,0,2), v(5,0,2)}
-		ass.same(path, expected)
-		
-		print("testOptimizeLineMovement ok")
-	end
+    print("testRectangle ok")
+  end
 
-	testTools.TestRunner(tests,"test")
+  function tests.test6OptimizeLineMovement()
+    local s = ShapeInfo:new()
+    s:fillYLayer(0, 5, 0, 0, 0, "F")
+    s:fillYLayer(2, 3, 1, 1, 0, "F")
+    s:fillYLayer(0, 5, 2, 2, 0, "F")
+    s:printShape()
+
+    -- if no direction is better, we prefer to move along Y axis
+    local path = calculatePath(CoordTracker:new(-1, -1, 0, CoordTracker.DIR.Z_PLUS), s, 0)
+    local expected = { v(0, 0, 0), v(5, 0, 0), v(5, 0, 1), v(0, 0, 1), v(0, 0, 2), v(5, 0, 2) }
+    ass.same(path, expected)
+
+    print("testOptimizeLineMovement ok")
+  end
+
+  testTools.TestRunner(tests, "test")
   
 end
 
---Pathfinder.unitTest()
+Pathfinder.unitTest()
 
 return Pathfinder

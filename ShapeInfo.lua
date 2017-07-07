@@ -1,4 +1,4 @@
-local vector = require "libvec"
+local vector = require("libvec")
 
 ---
 -- @module ShapeInfo
@@ -174,5 +174,6 @@ function ShapeInfo.unitTest()
    print("ShapeInfo unitTest ok")
 end
 
+ShapeInfo.unitTest()
 
 return ShapeInfo
